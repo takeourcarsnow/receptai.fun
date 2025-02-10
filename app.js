@@ -11,32 +11,48 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Security and optimization middleware
+// Security and optimization middleware with relaxed settings for Vercel
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-            imgSrc: ["'self'", "data:", "https:"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            connectSrc: ["'self'", "https://api.openai.com"]
-        }
-    }
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: false
 }));
+
 app.use(compression());
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public', {
+
+// Serve static files with proper MIME types
+app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: '1h',
     etag: true,
-    lastModified: true
+    lastModified: true,
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        }
+        if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+    }
 }));
+
+// Explicit routes for static files
+app.get('/styles.css', (req, res) => {
+    res.setHeader('Content-Type', 'text/css');
+    res.sendFile(path.join(__dirname, 'public', 'styles.css'));
+});
+
+app.get('/script.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'public', 'script.js'));
+});
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Ingredients database with emojis
+// Ingredients database
 const ingredients = {
     darzoves: [
         { name: "Pomidorai", emoji: "🍅" },
@@ -143,25 +159,6 @@ const ingredients = {
 const priceCache = new Map();
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
-// Price scraping configuration
-const STORES = {
-    MAXIMA: {
-        name: 'Maxima',
-        baseUrl: 'https://www.maxima.lt',
-        searchUrl: 'https://www.maxima.lt/search?q='
-    },
-    RIMI: {
-        name: 'Rimi',
-        baseUrl: 'https://www.rimi.lt',
-        searchUrl: 'https://www.rimi.lt/e-parduotuve/lt/paieska?query='
-    },
-    LIDL: {
-        name: 'Lidl',
-        baseUrl: 'https://www.lidl.lt',
-        searchUrl: 'https://www.lidl.lt/paieska?query='
-    }
-};
-
 // API Routes
 app.get('/api/ingredients', (req, res) => {
     try {
@@ -181,36 +178,32 @@ app.get('/api/prices/:ingredient', async (req, res) => {
         const ingredient = req.params.ingredient;
         const ingredientWithoutEmoji = ingredient.replace(/^[^\s]+\s/, '');
 
-        // Check cache
         const cachedPrices = priceCache.get(ingredientWithoutEmoji);
         if (cachedPrices && cachedPrices.timestamp > Date.now() - CACHE_DURATION) {
             return res.json(cachedPrices.prices);
         }
 
-        // Implement real price scraping here
-        // For now, using mock data
         const prices = [
             {
-                store: STORES.MAXIMA.name,
+                store: "Maxima",
                 name: ingredientWithoutEmoji,
-                price: `€${(Math.random() * 5 + 1).toFixed(2)}`,
-                url: `${STORES.MAXIMA.searchUrl}${encodeURIComponent(ingredientWithoutEmoji)}`
+                price: "€" + (Math.random() * 5 + 1).toFixed(2),
+                url: "https://www.maxima.lt"
             },
             {
-                store: STORES.RIMI.name,
+                store: "Rimi",
                 name: ingredientWithoutEmoji,
-                price: `€${(Math.random() * 5 + 1).toFixed(2)}`,
-                url: `${STORES.RIMI.searchUrl}${encodeURIComponent(ingredientWithoutEmoji)}`
+                price: "€" + (Math.random() * 5 + 1).toFixed(2),
+                url: "https://www.rimi.lt"
             },
             {
-                store: STORES.LIDL.name,
+                store: "Lidl",
                 name: ingredientWithoutEmoji,
-                price: `€${(Math.random() * 5 + 1).toFixed(2)}`,
-                url: `${STORES.LIDL.searchUrl}${encodeURIComponent(ingredientWithoutEmoji)}`
+                price: "€" + (Math.random() * 5 + 1).toFixed(2),
+                url: "https://www.lidl.lt"
             }
         ];
 
-        // Cache the results
         priceCache.set(ingredientWithoutEmoji, {
             timestamp: Date.now(),
             prices: prices
@@ -255,15 +248,12 @@ app.post('/api/generate-recipe', async (req, res) => {
                     "riebalai": "xx g"
                 }
             }
-
-            Svarbu: pateik tik gryną JSON, be jokių papildomų simbolių ar markdown formatavimo.
         `;
 
         const result = await model.generateContent(prompt);
         const response = result.response;
         let recipeText = response.text();
 
-        // Clean up the response text
         recipeText = recipeText.replace(/```json\n?/, '').replace(/```\n?/, '').trim();
 
         try {
@@ -314,5 +304,4 @@ setInterval(() => {
     }
 }, CACHE_DURATION);
 
-// Export for testing
 module.exports = app;
