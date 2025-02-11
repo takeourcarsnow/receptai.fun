@@ -159,6 +159,9 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    justify-content: center;
+    text-align: center;
+    margin: 0 auto;
 }
 
 .btn-primary, .patreon-btn {
@@ -201,6 +204,11 @@ body {
     color: var(--primary);
     font-family: 'Comfortaa', cursive;
     margin-bottom: 1rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
 /* Part 3: Main Layout and Categories */
@@ -224,6 +232,11 @@ body {
     text-align: left;
     transition: all var(--transition);
     color: var(--text); /* Ensure default text color is correct */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.75rem;
 }
 
 .category-btn:hover {
@@ -244,6 +257,7 @@ body {
 .category-btn i {
     width: 20px;
     transition: transform var(--transition);
+    flex-shrink: 0;
 }
 
 .category-btn:hover i {
@@ -585,6 +599,8 @@ body {
         flex-direction: column;
         padding: 1rem;
         gap: 1rem;
+        align-items: center;
+        text-align: center;
     }
 
     .branding, .logo-group, .text-group {
@@ -625,6 +641,58 @@ body {
     .search-bar button {
         width: 100%;
     }
+
+    .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .recipe-meta {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .recipe-content {
+        text-align: center;
+    }
+
+    .recipe-ingredients ul,
+    .recipe-tips ul {
+        display: inline-block;
+        text-align: left;
+    }
+
+    .recipe-instructions ol {
+        display: inline-block;
+        text-align: left;
+    }
+
+    .share-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .share-btn {
+        width: 100%;
+        max-width: 250px;
+    }
+
+    .price-item h4 {
+        justify-content: center;
+    }
+
+    .store-price {
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .store-name {
+        flex-basis: 100%;
+        margin-bottom: 0.25rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -645,6 +713,29 @@ body {
 
     .tagline, .description {
         font-size: 0.8rem;
+    }
+
+    .main-container {
+        padding: 1rem 0.5rem;
+    }
+
+    .ingredients-grid {
+        justify-content: center;
+    }
+
+    .ingredient-item {
+        width: 100%;
+        max-width: 250px;
+    }
+
+    .selected-ingredient {
+        text-align: center;
+        justify-content: center;
+    }
+
+    .remove-ingredient {
+        position: absolute;
+        right: 0.5rem;
     }
 }
 
