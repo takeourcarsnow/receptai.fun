@@ -184,6 +184,20 @@ app.post('/api/generate-recipe', async (req, res) => {
             Sukurk receptą naudojant šiuos ingredientus: ${ingredients.join(', ')}.
             
             Receptas turi būti originalus ir įdomus.
+            Patiekalo pavadinimas turi būti paprastas ir tradicinis, naudojant tik tikrus lietuviškus žodžius.
+            
+            Tinkamų pavadinimų pavyzdžiai:
+            - "Troškintos daržovės"
+            - "Vištienos sriuba"
+            - "Bulvių apkepas su sūriu"
+            - "Daržovių salotos"
+            - "Kepti baklažanai"
+            
+            Netinkamų pavadinimų pavyzdžiai:
+            - "Sultingas salierų sukurukas" (sukurukas nėra žodis)
+            - "Magiškas virtuvės šokis" (per daug poetiškas)
+            - "Skanusis puodelis" (neaiškus pavadinimas)
+            
             Pateik detalias instrukcijas ir naudingus patarimus.
 
             Atsakymą pateik JSON formatu:
