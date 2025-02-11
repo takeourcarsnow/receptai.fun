@@ -198,6 +198,15 @@ app.post('/api/generate-recipe', async (req, res) => {
             - "Magiškas virtuvės šokis" (per daug poetiškas)
             - "Skanusis puodelis" (neaiškus pavadinimas)
             
+            Instrukcijos turi būti labai detalios, įskaitant:
+            - Tikslų ingredientų paruošimo būdą (pvz., "supjaustyti kubeliais 1x1 cm", "smulkiai sukapoti")
+            - Konkrečią temperatūrą ir gaminimo laiką (pvz., "kepti 180°C temperatūroje 25 minutes")
+            - Puodo ar keptuvės tipą ir dydį (pvz., "vidutinio dydžio nesvilančioje keptuvėje")
+            - Kaitros lygį (pvz., "ant vidutinės kaitros")
+            - Maišymo ar kitų veiksmų dažnumą (pvz., "maišyti kas 2-3 minutes")
+            - Tekstūros ir išvaizdos požymius (pvz., "kol daržovės suminkštės, bet išliks traškios")
+            - Kiekvieną žingsnį suskaidyti į smulkesnius veiksmus
+
             Pateik detalias instrukcijas ir naudingus patarimus.
 
             Atsakymą pateik JSON formatu:
@@ -207,7 +216,13 @@ app.post('/api/generate-recipe', async (req, res) => {
                 "sudetingumas": "Lengvas/Vidutinis/Sudėtingas",
                 "porcijos": "x porcijos",
                 "ingredientai": ["ingredientas 1 (kiekis)", "ingredientas 2 (kiekis)"],
-                "instrukcijos": ["1 žingsnis", "2 žingsnis"],
+                "instrukcijos": [
+                    "<b>Paruošti ingredientus:</b> ...",
+                    "<b>Įkaitinti orkaitę/keptuvę:</b> ...",
+                    "<b>Sumaišyti produktus:</b> ...",
+                    "<b>Gaminti/kepti:</b> ...",
+                    "<b>Patiekti:</b> ..."
+                ],
                 "patarimai": ["patarimas 1", "patarimas 2"],
                 "maistoInformacija": {
                     "kalorijos": "xxx kcal",
