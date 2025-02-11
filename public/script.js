@@ -219,9 +219,16 @@ async function handleGenerateRecipe() {
 
         clearTimeout(timeoutId);
 
+        // Check if the response is OK before parsing JSON
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Server error');
+            // Try to parse error response as JSON, if fails fallback to basic error message
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (_) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+            throw new Error(errorData.error || `HTTP error: ${response.status}`);
         }
 
         const data = await response.json();
