@@ -205,27 +205,47 @@ async function handleGenerateRecipe() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 35000); // Client-side timeout
+
         const response = await fetch('/api/generate-recipe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 ingredients: Array.from(state.selectedIngredients)
-            })
+            }),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Server error');
+        }
 
         const data = await response.json();
 
-        if (data.error) throw new Error(data.error);
-        if (data.rawText) {
-            console.error('Raw text received:', data.rawText);
-            throw new Error('Nepavyko apdoroti recepto. Bandykite dar kartą.');
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // Validate required fields
+        if (!data.receptoPavadinimas || !data.instrukcijos) {
+            throw new Error('Gautas neteisingas recepto formatas');
         }
 
         await new Promise(resolve => setTimeout(resolve, 1000));
         UI.displayRecipe(data);
     } catch (error) {
         console.error('Error generating recipe:', error);
-        UI.showError('Nepavyko sugeneruoti recepto. Bandykite dar kartą.');
+        let errorMessage = 'Nepavyko sugeneruoti recepto. Bandykite dar kartą.';
+        
+        if (error.name === 'AbortError' || error.message === 'Užklausa užtruko per ilgai') {
+            errorMessage = 'Užklausa užtruko per ilgai. Bandykite dar kartą.';
+        }
+        
+        UI.showError(errorMessage);
     } finally {
         UI.elements.loadingOverlay.style.opacity = '0';
         setTimeout(() => {

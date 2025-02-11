@@ -226,6 +226,7 @@ app.post('/api/generate-recipe', async (req, res) => {
 
         const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
+        // Define the prompt string
         const prompt = `
             Sukurk receptą naudojant šiuos ingredientus: ${ingredients.join(', ')}.
             
@@ -250,25 +251,52 @@ app.post('/api/generate-recipe', async (req, res) => {
             }
         `;
 
-        const result = await model.generateContent(prompt);
+        // Add timeout promise
+        const timeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 30000)
+        );
+
+        const generatePromise = model.generateContent(prompt);
+        
+        // Race between the API call and timeout
+        const result = await Promise.race([generatePromise, timeout]);
+        
+        if (!result || !result.response) {
+            throw new Error('Invalid response from AI');
+        }
+
         const response = result.response;
         let recipeText = response.text();
 
-        recipeText = recipeText.replace(/```json\n?/, '').replace(/```\n?/, '').trim();
+        // Clean up the response text
+        recipeText = recipeText.replace(/```json\n?/, '')
+                              .replace(/```\n?/, '')
+                              .replace(/^\s+|\s+$/g, '');
 
         try {
             const recipe = JSON.parse(recipeText);
+            
+            // Validate recipe structure
+            if (!recipe.receptoPavadinimas || !recipe.instrukcijos) {
+                throw new Error('Invalid recipe format');
+            }
+
             res.json(recipe);
         } catch (parseError) {
-            console.error('JSON parsing error:', parseError);
-            res.status(500).json({
-                error: 'Failed to parse recipe',
-                rawText: recipeText
+            console.error('JSON parsing error:', parseError, '\nRaw text:', recipeText);
+            res.status(422).json({
+                error: 'Nepavyko apdoroti recepto',
+                details: 'Invalid JSON response'
             });
         }
     } catch (error) {
         console.error('Error generating recipe:', error);
-        res.status(500).json({ error: 'Failed to generate recipe' });
+        res.status(error.message === 'Request timeout' ? 504 : 500)
+           .json({ 
+               error: error.message === 'Request timeout' 
+                   ? 'Užklausa užtruko per ilgai' 
+                   : 'Nepavyko sugeneruoti recepto'
+           });
     }
 });
 
