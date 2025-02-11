@@ -31,7 +31,6 @@ const UI = {
     elements: {
         ingredientsList: document.getElementById('ingredientsList'),
         selectedList: document.getElementById('selectedIngredientsList'),
-        pricesList: document.getElementById('pricesList'),
         loadingOverlay: document.getElementById('loadingOverlay'),
         recipeSection: document.getElementById('recipeSection'),
         searchInput: document.querySelector('.search-bar input')
@@ -61,11 +60,9 @@ const UI = {
         if (state.selectedIngredients.has(ingredient)) {
             state.selectedIngredients.delete(ingredient);
             element.classList.remove('selected');
-            this.removePriceItem(ingredient);
         } else {
             state.selectedIngredients.add(ingredient);
             element.classList.add('selected');
-            this.fetchPrices(ingredient);
         }
         this.updateSelectedIngredientsList();
     },
@@ -86,7 +83,6 @@ const UI = {
     removeIngredient(ingredient) {
         state.selectedIngredients.delete(ingredient);
         this.updateSelectedIngredientsList();
-        this.removePriceItem(ingredient);
 
         const ingredientElements = document.querySelectorAll('.ingredient-item');
         ingredientElements.forEach(el => {
@@ -94,61 +90,6 @@ const UI = {
                 el.classList.remove('selected');
             }
         });
-    },
-
-    async fetchPrices(ingredient) {
-        try {
-            const response = await fetch(`/api/prices/${encodeURIComponent(ingredient)}`);
-            if (!response.ok) throw new Error('Failed to fetch prices');
-            const prices = await response.json();
-            this.displayPrices(ingredient, prices);
-        } catch (error) {
-            console.error('Error fetching prices:', error);
-            this.displayPrices(ingredient, []);
-        }
-    },
-
-    displayPrices(ingredient, prices) {
-        const ingredientWithoutEmoji = ingredient.replace(/^[^\s]+\s/, '');
-        let container = document.getElementById(`price-${ingredientWithoutEmoji}`);
-
-        if (!container) {
-            container = document.createElement('div');
-            container.id = `price-${ingredientWithoutEmoji}`;
-            container.className = 'price-item card';
-            container.style.opacity = '0';
-            container.style.transform = 'translateX(20px)';
-            this.elements.pricesList.appendChild(container);
-
-            setTimeout(() => {
-                container.style.opacity = '1';
-                container.style.transform = 'translateX(0)';
-            }, 50);
-        }
-
-        container.innerHTML = prices.length ? `
-            <h4>${ingredient}</h4>
-            ${prices.map(price => `
-                <div class="store-price">
-                    <span class="store-name">${price.store}</span>
-                    <a href="${price.url}" target="_blank" class="product-name">${price.name}</a>
-                    <span class="price-value">${price.price}</span>
-                </div>
-            `).join('')}
-        ` : `
-            <h4>${ingredient}</h4>
-            <p>Kainų nerasta</p>
-        `;
-    },
-
-    removePriceItem(ingredient) {
-        const ingredientWithoutEmoji = ingredient.replace(/^[^\s]+\s/, '');
-        const priceItem = document.getElementById(`price-${ingredientWithoutEmoji}`);
-        if (priceItem) {
-            priceItem.style.opacity = '0';
-            priceItem.style.transform = 'translateX(20px)';
-            setTimeout(() => priceItem.remove(), 300);
-        }
     },
 
     showError(message) {
@@ -248,8 +189,10 @@ async function handleGenerateRecipe() {
         console.error('Error generating recipe:', error);
         let errorMessage = 'Nepavyko sugeneruoti recepto. Bandykite dar kartą.';
         
-        if (error.name === 'AbortError' || error.message === 'Užklausa užtruko per ilgai') {
+        if (error.name === 'AbortError' || error.message.includes('užtruko')) {
             errorMessage = 'Užklausa užtruko per ilgai. Bandykite dar kartą.';
+        } else if (error.message.includes('Nepavyko apdoroti recepto')) {
+            errorMessage = 'Serveris negalėjo apdoroti recepto – AI atsakas buvo netinkamo formato. Patikrinkite konsolėje logus ir bandykite dar kartą.';
         }
         
         UI.showError(errorMessage);

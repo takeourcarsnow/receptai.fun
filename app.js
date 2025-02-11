@@ -155,10 +155,6 @@ const ingredients = {
     ]
 };
 
-// Cache configuration
-const priceCache = new Map();
-const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
-
 // API Routes
 app.get('/api/ingredients', (req, res) => {
     try {
@@ -170,49 +166,6 @@ app.get('/api/ingredients', (req, res) => {
     } catch (error) {
         console.error('Error fetching ingredients:', error);
         res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-app.get('/api/prices/:ingredient', async (req, res) => {
-    try {
-        const ingredient = req.params.ingredient;
-        const ingredientWithoutEmoji = ingredient.replace(/^[^\s]+\s/, '');
-
-        const cachedPrices = priceCache.get(ingredientWithoutEmoji);
-        if (cachedPrices && cachedPrices.timestamp > Date.now() - CACHE_DURATION) {
-            return res.json(cachedPrices.prices);
-        }
-
-        const prices = [
-            {
-                store: "Maxima",
-                name: ingredientWithoutEmoji,
-                price: "€" + (Math.random() * 5 + 1).toFixed(2),
-                url: "https://www.maxima.lt"
-            },
-            {
-                store: "Rimi",
-                name: ingredientWithoutEmoji,
-                price: "€" + (Math.random() * 5 + 1).toFixed(2),
-                url: "https://www.rimi.lt"
-            },
-            {
-                store: "Lidl",
-                name: ingredientWithoutEmoji,
-                price: "€" + (Math.random() * 5 + 1).toFixed(2),
-                url: "https://www.lidl.lt"
-            }
-        ];
-
-        priceCache.set(ingredientWithoutEmoji, {
-            timestamp: Date.now(),
-            prices: prices
-        });
-
-        res.json(prices);
-    } catch (error) {
-        console.error('Error fetching prices:', error);
-        res.status(500).json({ error: 'Failed to fetch prices' });
     }
 });
 
@@ -283,7 +236,9 @@ app.post('/api/generate-recipe', async (req, res) => {
 
             res.json(recipe);
         } catch (parseError) {
-            console.error('JSON parsing error:', parseError, '\nRaw text:', recipeText);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('JSON parsing error:', parseError, '\nRaw text:', recipeText);
+            }
             res.status(422).json({
                 error: 'Nepavyko apdoroti recepto',
                 details: 'Invalid JSON response'
@@ -291,12 +246,20 @@ app.post('/api/generate-recipe', async (req, res) => {
         }
     } catch (error) {
         console.error('Error generating recipe:', error);
-        res.status(error.message === 'Request timeout' ? 504 : 500)
-           .json({ 
-               error: error.message === 'Request timeout' 
-                   ? 'Užklausa užtruko per ilgai' 
-                   : 'Nepavyko sugeneruoti recepto'
-           });
+        if (error.message.includes('503 Service Unavailable') || error.message.includes('overloaded')) {
+            res.status(503).json({ error: 'Model overloaded. Please try again later.' });
+        } else if (error.message.includes('500 Internal Server Error')) {
+            res.status(500).json({
+                error: 'An internal error occurred. Please retry or report in https://developers.generativeai.google/guide/troubleshooting'
+            });
+        } else {
+            res.status(error.message === 'Request timeout' ? 504 : 500)
+               .json({ 
+                   error: error.message === 'Request timeout'
+                       ? 'Užklausa užtruko per ilgai'
+                       : 'Nepavyko sugeneruoti recepto'
+               });
+        }
     }
 });
 
@@ -321,15 +284,5 @@ if (process.env.NODE_ENV !== 'test') {
         console.log(`Environment: ${process.env.NODE_ENV}`);
     });
 }
-
-// Periodic cache cleanup
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of priceCache.entries()) {
-        if (value.timestamp < now - CACHE_DURATION) {
-            priceCache.delete(key);
-        }
-    }
-}, CACHE_DURATION);
 
 module.exports = app;
