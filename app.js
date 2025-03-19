@@ -177,7 +177,7 @@ app.post('/api/generate-recipe', async (req, res) => {
             return res.status(400).json({ error: 'Invalid ingredients provided' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         // Define the prompt string
         const prompt = `
